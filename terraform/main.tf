@@ -44,29 +44,44 @@ resource "aws_lambda_function" "go_api" {
 
 #api gateway rest api
 resource "aws_apigatewayv2" "go_api" {
-    name = "go-api-gateway"
-    protocol_type = "HTTP"
+  name          = "go-api-gateway"
+  protocol_type = "HTTP"
 }
 
 #api gateway stage 
 resource "aws_apigatewayv2_stage" "go_api" {
-    api_id = aws_apigatewayv2_api.go_api.id
-    name = "dev"
-    auto_deploy = true
+  api_id      = aws_apigatewayv2_api.go_api.id
+  name        = "dev"
+  auto_deploy = true
 }
 
 #api gateway route
 resource "aws_apigatewayv2_route" "go_api" {
-    api_id = aws_apigatewayv2_api.go_api.id
-    route_key = "ANY /api/{proxy+}"
-    target = integrations/${aws_apigatewayv2_integration.go_api.id}
+  api_id    = aws_apigatewayv2_api.go_api.id
+  route_key = "ANY /api/{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.go_api.id}"
 }
 
+#api gateway lambda integration
 resource "aws_apigatewayv2_integration" "go_api" {
-    api_id = aws_apigatewayv2_api.go_api.id
-    integration_type = "AWS_PROXY"
-    integration_uri = "aws_lambda_function.go_api.invoke_arn"
-    payload_format_version = "2.0"
-    integration_method = "POST"
+  api_id                 = aws_apigatewayv2_api.go_api.id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = "aws_lambda_function.go_api.invoke_arn"
+  payload_format_version = "2.0"
+  integration_method     = "POST"
+}
+
+#permissions
+resource "aws_lambda_permission" "api_gateway" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.go_api.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.go_api.execution_arn}/*/*"
+
+}
+
+output "api_url" {
+  value = "${aws_apigatewayv2_stage.go_api.invoke_url}/api/"
 }
 
