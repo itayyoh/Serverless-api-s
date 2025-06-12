@@ -41,3 +41,24 @@ resource "aws_lambda_function" "go_api" {
 
   reserved_concurrent_executions = 10
 }
+
+#api gateway rest api
+resource "aws_apigatewayv2" "go_api" {
+    name = "go-api-gateway"
+    protocol_type = "HTTP"
+}
+
+#api gateway stage 
+resource "aws_apigatewayv2_stage" "go_api" {
+    api_id = aws_apigatewayv2_api.go_api.id
+    name = "dev"
+    auto_deploy = true
+}
+
+#api gateway route
+resource "aws_apigatewayv2_route" "go_api" {
+    api_id = aws_apigatewayv2_api.go_api.id
+    route_key = "ANY /api/{proxy+}"
+    target = integrations/${aws_apigatewayv2_integration.go_api.id}
+}
+
