@@ -62,3 +62,11 @@ resource "aws_apigatewayv2_route" "go_api" {
     target = integrations/${aws_apigatewayv2_integration.go_api.id}
 }
 
+resource "aws_apigatewayv2_integration" "go_api" {
+    api_id = aws_apigatewayv2_api.go_api.id
+    integration_type = "AWS_PROXY"
+    integration_uri = "aws_lambda_function.go_api.invoke_arn"
+    payload_format_version = "2.0"
+    integration_method = "POST"
+}
+
