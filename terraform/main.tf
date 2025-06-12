@@ -2,6 +2,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
+#gives lambda permission to run
 resource "aws-iam-role" "lambda-role" {
   name = "go_api_lambda_role"
 
@@ -20,7 +21,7 @@ resource "aws-iam-role" "lambda-role" {
 }
 
 
-# attach lambda execution policy
+# ^^^^ attach the role we created above
 resource "aws_iam_role_policy_attachment" "lambda_basic" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
@@ -42,27 +43,27 @@ resource "aws_lambda_function" "go_api" {
   reserved_concurrent_executions = 10
 }
 
-#api gateway rest api
-resource "aws_apigatewayv2" "go_api" {
+#create an api gateway to recieve HTTP reqs from our golang code
+resource "aws_apigatewayv2_api" "go_api" {
   name          = "go-api-gateway"
   protocol_type = "HTTP"
 }
 
-#api gateway stage 
+#api gateway stage (dev)
 resource "aws_apigatewayv2_stage" "go_api" {
   api_id      = aws_apigatewayv2_api.go_api.id
   name        = "dev"
   auto_deploy = true
 }
 
-#api gateway route
+#define which urls trigger the lambda functions
 resource "aws_apigatewayv2_route" "go_api" {
   api_id    = aws_apigatewayv2_api.go_api.id
   route_key = "ANY /api/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.go_api.id}"
 }
 
-#api gateway lambda integration
+#this connects api gateway to lambda
 resource "aws_apigatewayv2_integration" "go_api" {
   api_id                 = aws_apigatewayv2_api.go_api.id
   integration_type       = "AWS_PROXY"
